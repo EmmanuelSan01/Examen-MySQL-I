@@ -1,0 +1,211 @@
+CREATE DATABASE IF NOT EXISTS PizzaFiesta;
+USE PizzaFiesta;
+
+CREATE TABLE IF NOT EXISTS cliente(
+	id int primary key auto_increment,
+	nombre varchar(100) not null,
+	n_contacto varchar(10) not null,
+	direccion varchar(100) not null
+);
+
+CREATE TABLE IF NOT EXISTS ingrediente(
+	id int primary key auto_increment,
+	nombre enum("champiñon", "peperonni", "carne", "tomate", "piña", "jalapeño") default "peperonni",
+	cantidad int check(cantidad between 1 and 10) not null
+);
+
+CREATE TABLE IF NOT EXISTS pizza(
+	id int primary key auto_increment,
+	tamanho enum("pequenha", "mediana", "grande") default "mediana",
+	ingrediente1 int not null,
+	ingrediente2 int,
+	ingrediente3 int,
+	precio decimal(4,2) not null,
+	foreign key (ingrediente1) references ingrediente(id),
+	foreign key (ingrediente2) references ingrediente(id),
+	foreign key (ingrediente3) references ingrediente(id)
+);
+
+CREATE TABLE IF NOT EXISTS bebida(
+	id int primary key auto_increment,
+	tipo enum("gaseosa", "jugo", "agua") default "gaseosa",
+	marca varchar(20) not null,
+	mililitros int not null,
+	precio decimal(4,2) not null
+);
+
+CREATE TABLE IF NOT EXISTS pedido(
+	id int primary key auto_increment,
+	pizza int not null,
+	bebida1 int,
+	bebida2 int,
+	costo decimal(5,2) not null,
+	h_recogida time not null,
+	cliente int not null,
+	foreign key (pizza) references pizza(id),
+	foreign key (bebida1) references bebida(id),
+	foreign key (bebida2) references bebida(id),
+	foreign key (cliente) references cliente(id)
+);
+
+/*
+#1
+1. Registrar un nuevo cliente
+*/
+INSERT INTO cliente (nombre, n_contacto, direccion) VALUE
+	("Carlos Rueda", "3001234567", "Floridablanca")
+;
+
+/*
+#2
+4. Agregar un ingrediente a la base de datos
+*/
+INSERT INTO ingrediente (nombre, cantidad) VALUES
+	("champiñon", 5),
+	("peperonni", 7),
+	("carne", 9),
+	("piña", 10)
+;
+
+/*
+#3
+2. Agregar un nuevo producto (pizza) al menú
+*/
+INSERT INTO pizza (tamanho, ingrediente1, ingrediente2, ingrediente3, precio) VALUES
+	("grande", 1, 2, 3, 2.5)
+;
+
+/*
+#4
+3. Registrar una bebida en el menú
+*/
+INSERT INTO bebida (tipo, marca, mililitros, precio) VALUES
+	("jugo", "Hit", 250, 1.5),
+	("gaseosa", "Coca-Cola", 350, 2.5),
+	("agua", "Cristal", 125, 2)
+;
+
+/*
+#5
+5. Crear un pedido para un cliente
+*/
+INSERT INTO pedido (pizza, bebida1, bebida2, costo, h_recogida, cliente) VALUE
+	(1, NULL, NULL, 5.5, "20:05", 1)
+;
+
+/*
+#6
+6. Añadir productos a un pedido específico
+*/
+UPDATE pedido SET bebida1 = 1, bebida2 = 2  WHERE id = 1;
+
+/*
+#7
+8. Consultar el detalle de un pedido (productos y sus ingredientes)
+*/
+SELECT pe.id AS pedido, pi.id AS pizza,
+	b1.id AS "bebida 1", b2.id AS "bebida 2",
+	i1.id AS "ingrediente 1", i2.id AS "ingrediente 2", i3.id AS "ingrediente 3"
+FROM pedido pe
+LEFT JOIN pizza pi ON pe.pizza = pe.id
+LEFT JOIN bebida b1 ON pe.bebida1 = b1.id
+LEFT JOIN bebida b2 ON pe.bebida2 = b2.id
+LEFT JOIN ingrediente i1 ON pi.ingrediente1 = i1.id
+LEFT JOIN ingrediente i2 ON pi.ingrediente2 = i2.id
+LEFT JOIN ingrediente i3 ON pi.ingrediente3 = i3.id
+WHERE pe.id = 1;
+-- Alternativa más entendible visualmente
+SELECT pe.id AS pedido,
+	CONCAT(
+		"pizza ", pi.tamanho, ", ", b1.tipo, " ", b1.marca, " ", b1.mililitros, "ml",
+		", ", b2.tipo, " ", b2.marca, " ", b2.mililitros, "ml"
+	) AS productos,
+	CONCAT(i1.nombre, ", ", i2.nombre, ", ", i3.nombre) AS ingredientes
+FROM pedido pe
+LEFT JOIN pizza pi ON pe.pizza = pe.id
+LEFT JOIN bebida b1 ON pe.bebida1 = b1.id
+LEFT JOIN bebida b2 ON pe.bebida2 = b2.id
+LEFT JOIN ingrediente i1 ON pi.ingrediente1 = i1.id
+LEFT JOIN ingrediente i2 ON pi.ingrediente2 = i2.id
+LEFT JOIN ingrediente i3 ON pi.ingrediente3 = i3.id
+WHERE pe.id = 1;
+
+/*
+#8
+9. Actualizar el precio de una pizza en el menú
+*/
+UPDATE pizza SET precio = 3.5  WHERE id = 1;
+
+/*
+#9
+10. Actualizar la dirección de un cliente
+*/
+UPDATE cliente SET direccion = "Zona Franca Santander"  WHERE id = 1;
+
+/*
+#10
+11. Eliminar un producto del menú (bebida)
+*/
+DELETE FROM bebida WHERE id = 3;
+
+/*
+#11
+12. Eliminar un ingrediente de la base de datos
+*/
+DELETE FROM ingrediente WHERE id = 4;
+
+/*
+#12
+13. Consultar todos los pedidos de un cliente
+*/
+SELECT *
+FROM pedido p
+WHERE p.cliente = 1;
+-- Alternativa más entendible visualmente
+SELECT pe.id,
+	CONCAT("tamaño ", pi.tamanho) AS pizza,
+	CONCAT(b1.tipo, " ", b1.marca, " ", b1.mililitros, "ml") AS "bebida 1",
+	CONCAT(b2.tipo, " ", b2.marca, " ", b2.mililitros, "ml") AS "bebida 2",
+	pe.costo, pe.h_recogida AS "hora recogida", c.nombre AS cliente
+FROM pedido pe
+LEFT JOIN pizza pi ON pe.pizza = pi.id
+LEFT JOIN bebida b1 ON pe.bebida1 = b1.id
+LEFT JOIN bebida b2 ON pe.bebida2 = b2.id
+LEFT JOIN cliente c ON pe.cliente = c.id
+WHERE cliente = 1;
+
+/*
+#13
+14. Listar todos los productos disponibles en el menú (pizzas y bebidas)
+*/
+SELECT p.id AS pizzas, b.id AS bebidas
+FROM pizza p
+JOIN bebida b;
+-- Alternativa más entendible visualmente
+SELECT CONCAT("tamaño ", p.tamanho) AS pizzas,
+	CONCAT(b.tipo, " ", b.marca, " ", b.mililitros, "ml") AS bebidas
+FROM pizza p
+JOIN bebida b;
+
+/*
+#14
+15. Listar todos los ingredientes disponibles para personalizar una pizza
+*/
+SELECT i.nombre AS ingredientes
+FROM ingrediente i;
+
+/*
+#15
+18. Buscar pedidos programados para recogerse después de una hora específica
+*/
+SELECT *
+FROM pedido p
+WHERE p.h_recogida > "19:00";
+
+/*
+#16
+20. Buscar pizzas con un precio mayor a $1 USD
+*/
+SELECT *
+FROM pizza p
+WHERE p.precio > 1;
